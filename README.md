@@ -1,6 +1,8 @@
 # LethalCompanyGameMaster
 Essentially a gamemode for lethal company that allows the host to control how dangerous the game is by spawning enemies.
 
+*I know the code is disorganized and could be 10x better. Unfortunately, I won't be making it cleaner, the important parts are efficient.
+
 # Features
 - Customizable server name and round message
 - Optional modifiers such as infinite sprint(you only), infinite credits, and infinite deadline
