@@ -41,6 +41,28 @@ Outside:
 ForestGiant
 MouthDog
 Earth Leviathan
+Baboon Bird
+
+# How to use the buy function
+1. Once in-game, open chat
+2. type in buy then the name of the item you'd like to buy, and optionally how many. e.g. /buy flash 4 will buy 4 pro flashlights
+3. These items will be assigned to their own drop pod, not added to the next one coming in.
+4. You can also use the item id in place of the name for single purchases. e.g. /buy 4 will buy 1 pro flashlight
+
+Here is the item list alongside their IDs:
+  { "Walkie-Talkie", 0 },
+  { "Pro Flashlight", 4 },
+  { "Normal Flashlight", 1 },
+  { "Shovel", 2 },
+  { "Lockpicker", 3 },
+  { "Stun Grenade", 5 },
+  { "Boom Box", 6 },
+  { "Inhaler", 7 },
+  { "Stun Gun", 8 },
+  { "Jet Pack", 9 },
+  {"Extension Ladder", 10 },
+  {"Radar Booster", 11 }
+
 
 # Installation
 1. Install BepInEx
