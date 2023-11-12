@@ -23,6 +23,8 @@ using GameNetcodeStuff;
 using BepInEx.Configuration;
 using System.Reflection;
 using Unity.Netcode;
+using static System.Net.Mime.MediaTypeNames;
+using LethalCompanyTestMod.Component;
 
 namespace LethalCompanyTestMod
 {
@@ -46,6 +48,8 @@ namespace LethalCompanyTestMod
 
         private static ConfigEntry<string> ServerName;
         private static ConfigEntry<string> RoundPost;
+        private static ConfigEntry<string> PrefixSetting;
+        private static ConfigEntry<bool> ShouldEnemiesSpawnNaturally;
         private static ConfigEntry<float> SpringSpeed;
         private static ConfigEntry<float> SpringAnimSpeed;
         private static ConfigEntry<float> PopUpTimer;
@@ -71,6 +75,18 @@ namespace LethalCompanyTestMod
         private static EnemyVent[] currentLevelVents;
         private static RoundManager currentRound;
 
+        // plan for more in the future
+        private static SpawnableEnemyWithRarity jesterRef;
+
+        //private static GUILoader guiLoader;
+
+        [HarmonyPatch(typeof(PlayerControllerB), "Update")]
+        [HarmonyPostfix]
+        static void localGUIUpdate()
+        {
+            //guiLoader.OnGUI();
+        }
+
         void Awake()
         {
             mls = BepInEx.Logging.Logger.CreateLogSource("GameMaster");
@@ -81,7 +97,14 @@ namespace LethalCompanyTestMod
             enemyRaritys = new Dictionary<SpawnableEnemyWithRarity, int>();
             levelEnemySpawns = new Dictionary<SelectableLevel, List<SpawnableEnemyWithRarity>>();
             enemyPropCurves = new Dictionary<SpawnableEnemyWithRarity, AnimationCurve>();
-            
+
+            //var gameObject = new UnityEngine.GameObject("GUILoader");
+            //UnityEngine.Object.DontDestroyOnLoad(gameObject);
+            //gameObject.AddComponent<GUILoader>();
+            //guiLoader = (GUILoader)gameObject.GetComponent("GUILoader");
+
+            ShouldEnemiesSpawnNaturally = Config.Bind("Host Settings", "Natural enemy spawn", false, "If true, enemies will spawn naturally. If false, enemies will spawn only when told to by this script.");
+            PrefixSetting = Config.Bind("Server Settings", "Command Prefix", "/", "An optional prefix for chat commands");
             ServerName = Config.Bind("Server Settings", "Server Name", "<color=red>G</color><color=blue>a</color><color=yellow>m</color><color=green>e</color><color=orange>M</color><color=purple>a</color><color=red>s</color><color=blue>t</color><color=yellow>e</color><color=green>r</color>", "Set the server name when creating a server");
             RoundPost = Config.Bind("Server Settings", "Round Comment", "<color=white>Custom game by </color><color=blue>Poseidon</color>", "A message that the server sends every round");
             SpringSpeed = Config.Bind("AI Settings", "Spring Head - Speed", 100f, new ConfigDescription("Base speed for springhead", new AcceptableValueRange<float>(0.1f, 150f)));
@@ -149,6 +172,7 @@ namespace LethalCompanyTestMod
             // make a dictionary of the inside enemy rarities
             foreach (var enemy in newLevel.Enemies)
             {
+                mls.LogInfo("Inside: " + enemy.enemyType.enemyName);
                 if (!enemyRaritys.ContainsKey(enemy))
                 {
                     enemyRaritys.Add(enemy, enemy.rarity);
@@ -161,6 +185,7 @@ namespace LethalCompanyTestMod
             // make a dictionary of the outside enemy rarities
             foreach (var enemy in newLevel.OutsideEnemies)
             {
+                mls.LogInfo("Outside: " + enemy.enemyType.enemyName);
                 if (!enemyRaritys.ContainsKey(enemy))
                 {
                     enemyRaritys.Add(enemy, enemy.rarity);
@@ -185,22 +210,46 @@ namespace LethalCompanyTestMod
             {
                 HUDManager.Instance.AddTextToChatOnServer(RoundPost.Value);
             }
+
+
+
+
+            if (!ShouldEnemiesSpawnNaturally.Value)
+            {
+                bool foundJester = false;
+                // remove rarity for all enemies
+                foreach (var enemy in newLevel.Enemies)
+                {
+                    enemy.rarity = 0;
+                    if (enemy.enemyType.enemyName.ToLower().Contains("jester"))
+                    {
+                        mls.LogInfo("Found a jester, yoinking that reference");
+                        //todo add more enemies, likely utilizing a list that will ultimately result in a list of enemies that replaces the existing list the server uses
+                        foundJester = true;
+                        jesterRef = enemy;
+                    }
+                }
+                if (!foundJester)
+                {
+                    if (jesterRef != null)
+                    {
+                        mls.LogInfo("Didn't find a jester, but we can use the ref");
+                        newLevel.Enemies.Add(jesterRef);
+                    }
+                    else
+                    {
+                        mls.LogInfo("We couldn't add a jester to this level");
+                    }
+                }
+
+                foreach (var enemy in newLevel.OutsideEnemies)
+                {
+                    enemy.rarity = 0;
+                }
+            }
             
 
 
-
-
-            // remove rarity for all enemies
-            foreach (var enemy in newLevel.Enemies)
-            {
-                enemy.rarity = 0;
-
-            }
-
-            foreach (var enemy in newLevel.OutsideEnemies)
-            {
-                enemy.rarity = 0;
-            }
 
             // create temporary version of level to modify
             SelectableLevel n = newLevel;
@@ -232,48 +281,8 @@ namespace LethalCompanyTestMod
         [HarmonyPrefix]
         static void autoManualSpawn(ref EnemyVent[] ___allEnemyVents, ref SelectableLevel ___currentLevel)
         {
-            // remove for testing
+
             return;
-            /*
-            // theoretically adds the jester to maps where the jester doesn't exist
-            // doesn't work, tosses error, gonna leave it alone for now.
-            
-            JesterAI jester = new JesterAI();
-            SpawnableEnemyWithRarity jesterSpawnable = new SpawnableEnemyWithRarity
-            {
-                enemyType = jester.enemyType,
-                rarity = 100
-            };
-
-            List<SpawnableEnemyWithRarity> Enemies = new List<SpawnableEnemyWithRarity>
-            {
-                jesterSpawnable
-            };
-            Console.WriteLine(Enemies[0].enemyType.ToString());
-
-            //___currentLevel.Enemies = new List<SpawnableEnemyWithRarity>();
-
-
-            
-            bool foundJester = false;
-            foreach (var enemy in ___currentLevel.Enemies)
-            {
-
-                if (enemy.enemyType = jester.enemyType)
-                {
-                    foundJester = true;
-                }
-            }
-            if (!foundJester) 
-            {
-                ___currentLevel.Enemies.Add(jesterSpawnable);
-                mls.LogInfo("Attempting to add jester to spawn table");
-            }
-            else
-            {
-                mls.LogInfo("Jester already in spawn table");
-            }
-            */
             // define a limit for each thing we'd like to spawn
             Dictionary<string, int> spawnLimits = new Dictionary<string, int>
             {
@@ -488,209 +497,382 @@ namespace LethalCompanyTestMod
         {
             
             string text = __instance.chatTextField.text;
-
+            // make prefix even if one doesn't exist
+            string tempPrefix = "/";
             mls.LogInfo(text);
 
-            if (text.ToLower().StartsWith("spawn"))
+            if(PrefixSetting.Value != "")
             {
-                string[] enteredText = text.Split(' ');
-                if (enteredText.Length > 1)
+                // if prefix exists, use that instead
+                tempPrefix = PrefixSetting.Value;
+            }
+
+            // check if prefix is utilized
+            if(text.ToLower().StartsWith(tempPrefix.ToLower()))
+            {
+                //check which command
+                if (text.ToLower().StartsWith(tempPrefix + "spawn"))
                 {
-                    if (enteredText.Length > 2)
+                    string[] enteredText = text.Split(' ');
+                    if (enteredText.Length > 1)
                     {
-                        if (int.TryParse(enteredText[2], out int amountToSpawn))
+                        if (enteredText.Length > 2)
                         {
-                            bool foundEnemyMulti = false;
-                            foreach (var enemy in currentLevel.Enemies)
+                            if (int.TryParse(enteredText[2], out int amountToSpawn))
                             {
-                                if (enemy.enemyType.enemyName.ToLower().Contains(enteredText[1].ToLower()))
+                                bool foundEnemyMulti = false;
+                                foreach (var enemy in currentLevel.Enemies)
                                 {
-                                    foundEnemyMulti = true;
-                                    try
+                                    if (enemy.enemyType.enemyName.ToLower().Contains(enteredText[1].ToLower()))
                                     {
-                                        for (int i = 0; i <= amountToSpawn; i++)
+                                        foundEnemyMulti = true;
+                                        try
                                         {
-                                            currentRound.SpawnEnemyOnServer(currentRound.allEnemyVents[Random.Range(0, currentRound.allEnemyVents.Length)].floorNode.position, currentRound.allEnemyVents[i].floorNode.eulerAngles.y, currentLevel.Enemies.IndexOf(enemy));
-                                            mls.LogInfo("Spawned another " + enemy.enemyType.enemyName);
-                                        }    
+                                            for (int i = 0; i <= amountToSpawn; i++)
+                                            {
+                                                currentRound.SpawnEnemyOnServer(currentRound.allEnemyVents[Random.Range(0, currentRound.allEnemyVents.Length)].floorNode.position, currentRound.allEnemyVents[i].floorNode.eulerAngles.y, currentLevel.Enemies.IndexOf(enemy));
+                                                mls.LogInfo("Spawned another " + enemy.enemyType.enemyName);
+                                            }
+                                        }
+                                        catch
+                                        {
+                                            mls.LogInfo("Failed to spawn enemies, check your command.");
+                                        }
+                                        if (foundEnemyMulti) { break; }
                                     }
-                                    catch
+                                }
+
+                                if (foundEnemyMulti)
+                                {
+                                    if (HideCommandMessages.Value)
                                     {
-                                        mls.LogInfo("Failed to spawn enemies, check your command.");
+                                        __instance.chatTextField.text = "";
                                     }
-                                    if (foundEnemyMulti) { break; }
+                                    return;
+                                }
+
+                                foreach (var outsideEnemy in currentLevel.OutsideEnemies)
+                                {
+                                    if (outsideEnemy.enemyType.enemyName.ToLower().Contains(enteredText[1].ToLower()))
+                                    {
+                                        foundEnemyMulti = true;
+                                        try
+                                        {
+                                            for (int i = 0; i < amountToSpawn; i++)
+                                            {
+                                                mls.LogInfo("The index of " + outsideEnemy.enemyType.enemyName + " is " + currentLevel.OutsideEnemies.IndexOf(outsideEnemy));
+                                                GameObject obj = UnityEngine.Object.Instantiate(currentLevel
+                                                .OutsideEnemies[currentLevel.OutsideEnemies.IndexOf(outsideEnemy)]
+                                                .enemyType.enemyPrefab, GameObject.FindGameObjectsWithTag("OutsideAINode")[Random.Range(0, GameObject.FindGameObjectsWithTag("OutsideAINode").Length - 1)].transform.position, Quaternion.Euler(Vector3.zero));
+                                                obj.gameObject.GetComponentInChildren<NetworkObject>().Spawn(destroyWithScene: true);
+                                                mls.LogInfo("Spawned another " + outsideEnemy.enemyType.enemyName);
+                                            }
+
+                                        }
+                                        catch
+                                        {
+                                            mls.LogInfo("Failed to spawn enemies, check your command.");
+                                        }
+                                        if (foundEnemyMulti) { break; }
+                                    }
+                                }
+
+                            }
+                            else
+                            {
+                                mls.LogInfo("Failed to spawn enemies, check your command.");
+                            }
+
+                            mls.LogInfo("Length of input array: " + enteredText.Length);
+                        }
+                        mls.LogInfo("Got your message, trying to find the enemy");
+                        // spawn 1 enemy
+                        bool foundEnemy = false;
+                        foreach (var enemy in currentLevel.Enemies)
+                        {
+
+                            // jester
+                            // lasso
+                            // spider
+                            // centipede
+                            // blob
+                            // flowerman
+                            // spring
+                            // puffer
+
+                            if (enemy.enemyType.enemyName.ToLower().Contains(enteredText[1].ToLower()))
+                            {
+                                try
+                                {
+                                    foundEnemy = true;
+                                    currentRound.SpawnEnemyOnServer(currentRound.allEnemyVents[0].floorNode.position, currentRound.allEnemyVents[0].floorNode.eulerAngles.y, currentLevel.Enemies.IndexOf(enemy));
+
+                                    mls.LogInfo("Spawned " + enemy.enemyType.enemyName);
+                                }
+                                catch
+                                {
+                                    mls.LogInfo("Could not spawn enemy");
+                                }
+                            }
+                        }
+                        // return
+                        if (foundEnemy)
+                        {
+                            if (HideCommandMessages.Value)
+                            {
+                                __instance.chatTextField.text = "";
+                            }
+                            return;
+                        }
+
+
+                        foreach (var outsideEnemy in currentLevel.OutsideEnemies)
+                        {
+
+                            if (outsideEnemy.enemyType.enemyName.ToLower().Contains(enteredText[1].ToLower()))
+                            {
+                                try
+                                {
+                                    foundEnemy = true;
+                                    mls.LogInfo(outsideEnemy.enemyType.enemyName);
+
+                                    //random ai node index Random.Range(0, GameObject.FindGameObjectsWithTag("OutsideAINode").Length) - 1
+
+                                    mls.LogInfo("The index of " + outsideEnemy.enemyType.enemyName + " is " + currentLevel.OutsideEnemies.IndexOf(outsideEnemy));
+                                    //currentLevel.Enemies.IndexOf(enemy)
+                                    GameObject obj = UnityEngine.Object.Instantiate(currentLevel
+                                                    .OutsideEnemies[currentLevel.OutsideEnemies.IndexOf(outsideEnemy)]
+                                                    .enemyType.enemyPrefab, GameObject.FindGameObjectsWithTag("OutsideAINode")[Random.Range(0, GameObject.FindGameObjectsWithTag("OutsideAINode").Length) - 1].transform.position, Quaternion.Euler(Vector3.zero));
+
+
+
+
+                                    obj.gameObject.GetComponentInChildren<NetworkObject>().Spawn(destroyWithScene: true);
+                                    mls.LogInfo("Spawned " + outsideEnemy.enemyType.enemyName);
+                                }
+                                catch (Exception e)
+                                {
+                                    mls.LogInfo("Could not spawn enemy");
+                                    mls.LogInfo("The game tossed an error: " + e.Message);
+                                }
+                            }
+                        }
+
+                    }
+
+                    if (HideCommandMessages.Value)
+                    {
+                        __instance.chatTextField.text = "";
+                    }
+                    return;
+                }
+                // weather kinda buggy at the moment, doesn't always want to change
+                if (text.ToLower().StartsWith(tempPrefix + "weather"))
+                {
+                    string[] enteredText = text.Split(' ');
+                    if (enteredText.Length > 1)
+                    {
+                        if (enteredText[1].ToLower().Contains("rain"))
+                        {
+                            currentRound.timeScript.currentLevelWeather = LevelWeatherType.Rainy;
+                            mls.LogInfo("tried to change the weather to " + enteredText[1]);
+                        }
+                        if (enteredText[1].ToLower().Contains("eclipse"))
+                        {
+                            currentRound.timeScript.currentLevelWeather = LevelWeatherType.Eclipsed;
+                            mls.LogInfo("tried to change the weather to " + enteredText[1]);
+                        }
+                        if (enteredText[1].ToLower().Contains("flood"))
+                        {
+                            currentRound.timeScript.currentLevelWeather = LevelWeatherType.Flooded;
+                            mls.LogInfo("tried to change the weather to " + enteredText[1]);
+                        }
+                        if (enteredText[1].ToLower().Contains("dust") || enteredText[1].ToLower().Contains("fog") || enteredText[1].ToLower().Contains("mist"))
+                        {
+                            currentRound.timeScript.currentLevelWeather = LevelWeatherType.DustClouds;
+                            mls.LogInfo("tried to change the weather to " + enteredText[1]);
+                        }
+                        if (enteredText[1].ToLower().Contains("storm"))
+                        {
+                            currentRound.timeScript.currentLevelWeather = LevelWeatherType.Stormy;
+                            mls.LogInfo("tried to change the weather to " + enteredText[1]);
+                        }
+                        if (enteredText[1].ToLower().Contains("none"))
+                        {
+                            currentRound.timeScript.currentLevelWeather = LevelWeatherType.None;
+                            mls.LogInfo("tried to change the weather to " + enteredText[1]);
+                        }
+                    }
+                    if (HideCommandMessages.Value)
+                    {
+                        __instance.chatTextField.text = "";
+                    }
+                    return;
+
+                }
+                // may struggle to work over the network
+                if (text.ToLower().StartsWith(tempPrefix + "togglelights"))
+                {
+                    BreakerBox breakerBox = UnityEngine.Object.FindObjectOfType<BreakerBox>();
+                    if (breakerBox != null)
+                    {
+                        if (breakerBox.isPowerOn)
+                        {
+                            currentRound.TurnBreakerSwitchesOff();
+                            currentRound.TurnOnAllLights(false);
+                            breakerBox.isPowerOn = false;
+                        }
+                        else
+                        {
+                            //currentRound.TurnBreakerSwitchesOn();
+
+                            currentRound.PowerSwitchOnClientRpc();
+                            //breakerBox.isPowerOn = true;
+                        }
+                    }
+                    if (HideCommandMessages.Value)
+                    {
+                        __instance.chatTextField.text = "";
+                    }
+                    return;
+
+                }
+                //buy items
+                if (text.ToLower().StartsWith(tempPrefix + "buy"))
+                {
+                    Terminal terminal = UnityEngine.Object.FindObjectOfType<Terminal>();
+                    if (terminal != null)
+                    {
+                        // put pro first to avoid issues, if you want a normal flashlight, you must call normal otherwise pro will take precedent
+                        List<string> itemList = new List<string>
+                    {
+                        "Walkie-Talkie",
+                        "Pro Flashlight",
+                        "Normal Flashlight",
+                        "Shovel",
+                        "Lockpicker",
+                        "Stun Grenade",
+                        "Boom Box",
+                        "Inhaler",
+                        "Stun Gun",
+                        "Jet Pack",
+                        "Extension Ladder",
+                        "Radar Booster" 
+                    };
+
+                    Dictionary<string, int> itemID = new Dictionary<string, int>
+                    {
+                        { "Walkie-Talkie", 0 },
+                        { "Pro Flashlight", 4 },
+                        { "Normal Flashlight", 1 },
+                        { "Shovel", 2 },
+                        { "Lockpicker", 3 },
+                        { "Stun Grenade", 5 },
+                        { "Boom Box", 6 },
+                        { "Inhaler", 7 },
+                        { "Stun Gun", 8 },
+                        { "Jet Pack", 9 },
+                        {"Extension Ladder", 10 },
+                        {"Radar Booster", 11 }
+                    };
+
+                        string[] enteredText = text.Split(' ');
+                        if (enteredText.Length > 1)
+                        {
+                            if (enteredText.Length > 2)
+                            {
+                                // parse if buying multiple items
+                                if (int.TryParse(enteredText[2], out int c))
+                                {
+                                    bool foundItemMulti = false;
+                                    foreach (string item in itemList)
+                                    {
+                                        if (item.ToLower().Contains(enteredText[1]))
+                                        {
+                                            foundItemMulti = true;
+                                            List<int> a = new List<int>();
+                                            for (int i = 0; i < c; i++)
+                                            {
+                                                a.Add(itemID[item]);
+                                            }
+                                            mls.LogInfo(a.Count());
+                                            terminal.BuyItemsServerRpc(a.ToArray(), terminal.groupCredits, 0);
+                                            break;
+                                        }
+                                    }
+                                    if (!foundItemMulti)
+                                    {
+                                        mls.LogInfo("Couldn't figure out what [ " + enteredText[1] + " ] was.");
+                                    }
+
+                                    if (HideCommandMessages.Value)
+                                    {
+                                        __instance.chatTextField.text = "";
+                                    }
+                                    return;
+                                }
+                                else
+                                {
+                                    mls.LogInfo("Couldn't parse command [ " + enteredText[2] + " ]");
+                                    if (HideCommandMessages.Value)
+                                    {
+                                        __instance.chatTextField.text = "";
+                                    }
+                                    return;
                                 }
                             }
 
-                            if (foundEnemyMulti) 
+                            bool foundItem = false;
+                            // parse if buying 1 item by name
+                            foreach (string item in itemList)
                             {
+                                if (item.ToLower().Contains(enteredText[1]))
+                                {
+                                    foundItem = true;
+                                    int[] a = { itemID[item] };
+                                    terminal.BuyItemsServerRpc(a, terminal.groupCredits, 0);
+                                }
+                            }
+                            if (!foundItem) { mls.LogInfo("Couldn't figure out what [ " + enteredText[1] + " ] was. Trying via int parser."); }
+
+                            // parse if buying by index
+                            if (int.TryParse(enteredText[1], out int b))
+                            {
+                                int[] a = { b };
+                                terminal.BuyItemsServerRpc(a, terminal.groupCredits, 0);
+                            }
+                            else
+                            {
+                                mls.LogInfo("Couldn't figure out what [ " + enteredText[1] + " ] was. Int parser failed, please try again.");
                                 if (HideCommandMessages.Value)
                                 {
                                     __instance.chatTextField.text = "";
                                 }
                                 return;
                             }
-
-                            foreach (var outsideEnemy in currentLevel.OutsideEnemies)
+                            if (HideCommandMessages.Value)
                             {
-                                if (outsideEnemy.enemyType.enemyName.ToLower().Contains(enteredText[1].ToLower()))
-                                {
-                                    foundEnemyMulti = true;
-                                    try
-                                    {
-                                        for (int i = 0; i < amountToSpawn; i++)
-                                        {
-                                            mls.LogInfo("The index of " + outsideEnemy.enemyType.enemyName + " is " + currentLevel.OutsideEnemies.IndexOf(outsideEnemy));
-                                            GameObject obj = UnityEngine.Object.Instantiate(currentLevel
-                                            .OutsideEnemies[currentLevel.OutsideEnemies.IndexOf(outsideEnemy)]
-                                            .enemyType.enemyPrefab, GameObject.FindGameObjectsWithTag("OutsideAINode")[Random.Range(0, GameObject.FindGameObjectsWithTag("OutsideAINode").Length - 1)].transform.position, Quaternion.Euler(Vector3.zero));
-                                            obj.gameObject.GetComponentInChildren<NetworkObject>().Spawn(destroyWithScene: true);
-                                            mls.LogInfo("Spawned another " + outsideEnemy.enemyType.enemyName);
-                                        }
-                                            
-                                    }
-                                    catch
-                                    {
-                                        mls.LogInfo("Failed to spawn enemies, check your command.");
-                                    }
-                                    if (foundEnemyMulti) { break; }
-                                }
+                                __instance.chatTextField.text = "";
                             }
+                            return;
 
                         }
-                        else
-                        {
-                            mls.LogInfo("Failed to spawn enemies, check your command.");
-                        }
-
-                        mls.LogInfo("Length of input array: " + enteredText.Length);
                     }
-                    mls.LogInfo("Got your message, trying to find the enemy");
-                    // spawn 1 enemy
-                    bool foundEnemy = false;
-                    foreach (var enemy in currentLevel.Enemies)
+
+                    if (HideCommandMessages.Value)
                     {
-
-                        // jester
-                        // lasso
-                        // spider
-                        // centipede
-                        // blob
-                        // flowerman
-                        // spring
-                        // puffer
-
-                        if (enemy.enemyType.enemyName.ToLower().Contains(enteredText[1].ToLower()))
-                        {
-                            try
-                            {
-                                foundEnemy = true;
-                                currentRound.SpawnEnemyOnServer(currentRound.allEnemyVents[0].floorNode.position, currentRound.allEnemyVents[0].floorNode.eulerAngles.y, currentLevel.Enemies.IndexOf(enemy));
-
-                                mls.LogInfo("Spawned " + enemy.enemyType.enemyName);
-                            }
-                            catch
-                            {
-                                mls.LogInfo("Could not spawn enemy");
-                            }
-                        }
+                        __instance.chatTextField.text = "";
                     }
-                    // return
-                    if (foundEnemy)
-                    {
-                        if (HideCommandMessages.Value)
-                        {
-                            __instance.chatTextField.text = "";
-                        }
-                        return;
-                    }
-
-
-                    foreach (var outsideEnemy in currentLevel.OutsideEnemies)
-                    {
-                        
-                        if (outsideEnemy.enemyType.enemyName.ToLower().Contains(enteredText[1].ToLower()))
-                        {
-                            try
-                            {
-                                foundEnemy = true;
-                                mls.LogInfo(outsideEnemy.enemyType.enemyName);
-
-                                //random ai node index Random.Range(0, GameObject.FindGameObjectsWithTag("OutsideAINode").Length) - 1
-
-                                mls.LogInfo("The index of " + outsideEnemy.enemyType.enemyName + " is " + currentLevel.OutsideEnemies.IndexOf(outsideEnemy));
-                                //currentLevel.Enemies.IndexOf(enemy)
-                                GameObject obj = UnityEngine.Object.Instantiate(currentLevel
-                                                .OutsideEnemies[currentLevel.OutsideEnemies.IndexOf(outsideEnemy)]
-                                                .enemyType.enemyPrefab, GameObject.FindGameObjectsWithTag("OutsideAINode")[Random.Range(0, GameObject.FindGameObjectsWithTag("OutsideAINode").Length) - 1].transform.position, Quaternion.Euler(Vector3.zero));
-
-
-
-
-                                obj.gameObject.GetComponentInChildren<NetworkObject>().Spawn(destroyWithScene: true);
-                                mls.LogInfo("Spawned " + outsideEnemy.enemyType.enemyName);
-                            }
-                            catch(Exception e)
-                            {
-                                mls.LogInfo("Could not spawn enemy");
-                                mls.LogInfo("The game tossed an error: " + e.Message);
-                            }
-                        }
-                    }
-
+                    return;
                 }
 
+                // ensures value is hidden if set but path doesn't hide it
                 if (HideCommandMessages.Value)
                 {
                     __instance.chatTextField.text = "";
                 }
                 return;
             }
-            if (text.ToLower().StartsWith("weather"))
-            {
-                string[] enteredText = text.Split(' ');
-                if (enteredText.Length > 1)
-                {
-                    if (enteredText[1].ToLower().Contains("rain"))
-                    {
-                        currentRound.timeScript.currentLevelWeather = LevelWeatherType.Rainy;
-                        mls.LogInfo("tried to change the weather to " + enteredText[1]);
-                    }
-                    if (enteredText[1].ToLower().Contains("eclipse"))
-                    {
-                        currentRound.timeScript.currentLevelWeather = LevelWeatherType.Eclipsed;
-                        mls.LogInfo("tried to change the weather to " + enteredText[1]);
-                    }
-                    if (enteredText[1].ToLower().Contains("flood"))
-                    {
-                        currentRound.timeScript.currentLevelWeather = LevelWeatherType.Flooded;
-                        mls.LogInfo("tried to change the weather to " + enteredText[1]);
-                    }
-                    if (enteredText[1].ToLower().Contains("dust") || enteredText[1].ToLower().Contains("fog") || enteredText[1].ToLower().Contains("mist"))
-                    {
-                        currentRound.timeScript.currentLevelWeather = LevelWeatherType.DustClouds;
-                        mls.LogInfo("tried to change the weather to " + enteredText[1]);
-                    }
-                    if (enteredText[1].ToLower().Contains("storm"))
-                    {
-                        currentRound.timeScript.currentLevelWeather = LevelWeatherType.Stormy;
-                        mls.LogInfo("tried to change the weather to " + enteredText[1]);
-                    }
-                    if (enteredText[1].ToLower().Contains("none"))
-                    {
-                        currentRound.timeScript.currentLevelWeather = LevelWeatherType.None;
-                        mls.LogInfo("tried to change the weather to " + enteredText[1]);
-                    }
-                }
-                if (HideCommandMessages.Value)
-                {
-                    __instance.chatTextField.text = "";
-                }
-                return;
-
-            }
-
-
         }
 
         [HarmonyPatch(typeof(RoundManager), nameof(RoundManager.SpawnEnemyFromVent))]
@@ -781,6 +963,5 @@ namespace LethalCompanyTestMod
         }
 
     }
-
         
 }
