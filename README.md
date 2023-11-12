@@ -11,6 +11,10 @@ Essentially a gamemode for lethal company that allows the host to control how da
 - Removes all enemies normally
 - Only the host needs to install it, no one else does
 - Hides sent commands, but optionally can show them
+- buy and togglelights commands
+- customizable command prefix (default /)
+- ability to toggle natural spawning via settings(not commands yet)
+- ability to spawn jester on maps where he normally couldn't spawn after traveling to a map where he could spawn. *note: adding all enemies to this list later
 
 # How to use the spawn function
 1. Once in-game, open chat
