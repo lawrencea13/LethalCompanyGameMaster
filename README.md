@@ -73,12 +73,20 @@ Here is the item list alongside their IDs:
 
 # Commands
 
-/spawn {enemy} {amount}
-Example: /spawn dog 5
-/buy {item} {amount}
-Example: /buy pro 3
-/togglelights
-/nightvision
-can use /night or /vision
-/speed
-/god
+- /spawn {enemy} {amount}
+- -Example: /spawn dog 5
+- /buy {item} {amount}
+- -Example: /buy pro 3
+- /togglelights
+- /nightvision
+- -can use /night or /vision
+- /speed
+- /god
+
+
+
+
+
+
+
+
