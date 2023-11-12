@@ -71,3 +71,14 @@ Here is the item list alongside their IDs:
 4. Run game once to generate .cfg file
 5. If you'd like to customize the mod, head to BepInEx/config and modify the config file
 
+# Commands
+
+/spawn {enemy} {amount}
+Example: /spawn dog 5
+/buy {item} {amount}
+Example: /buy pro 3
+/togglelights
+/nightvision
+can use /night or /vision
+/speed
+/god
