@@ -4,6 +4,7 @@ Essentially a gamemode for lethal company that allows the host to control how da
 *I know the code is disorganized and could be 10x better. Unfortunately, I won't be making it cleaner, the important parts are efficient.
 
 # Features
+- built-in menu, opened with the Insert key
 - Customizable server name and round message
 - Optional modifiers such as infinite sprint(you only), infinite credits, and infinite deadline
 - Customizable AI tweaks, mainly focused on speed adjustments
@@ -68,8 +69,7 @@ Here is the item list alongside their IDs:
 1. Install BepInEx
 2. Run game once with BepInEx installed to generate folders/files
 3. Drop the DLL inside of the BepInEx/plugins folder
-4. Run game once to generate .cfg file
-5. If you'd like to customize the mod, head to BepInEx/config and modify the config file
+4. No further steps needed
 
 # Commands
 
