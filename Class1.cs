@@ -66,7 +66,7 @@ namespace LethalCompanyTestMod
 
         private static ConfigEntry<bool> HideCommandMessages;
         private static ConfigEntry<bool> HideEnemySpawnMessages;
-        private static ConfigEntry<bool> EnableInfiniteSprint;
+        internal static ConfigEntry<bool> EnableInfiniteSprint;
         private static ConfigEntry<bool> EnableInfiniteCredits;
         private static ConfigEntry<bool> EnableInfiniteDeadline;
         private static ConfigEntry<int> XPChange;
@@ -106,20 +106,20 @@ namespace LethalCompanyTestMod
         // plan for more in the future
         private static SpawnableEnemyWithRarity jesterRef;
 
-        private static GUILoader myGUI;
+        internal static GUILoader myGUI;
         private static bool noClipEnabled;
-        private static bool enableGod;
-        private static bool nightVision;
-        private static PlayerControllerB playerRef;
+        internal static bool enableGod;
+        internal static bool nightVision;
+        internal static PlayerControllerB playerRef;
         private static bool speedHack;
-        private static float nightVisionIntensity;
-        private static float nightVisionRange;
-        private static UnityEngine.Color nightVisionColor;
+        internal static float nightVisionIntensity;
+        internal static float nightVisionRange;
+        internal static UnityEngine.Color nightVisionColor;
 
         private static bool hasGUISynced = false;
-        private static bool isHost;
+        internal static bool isHost;
 
-        private static TestMod Instance;
+        internal static TestMod Instance;
 
         void Awake()
         {
@@ -196,7 +196,7 @@ namespace LethalCompanyTestMod
             hasGUISynced = true;
         }
 
-        void UpdateCFGVarsFromGUI()
+        internal void UpdateCFGVarsFromGUI()
         {
             if(!hasGUISynced) { setGUIVars(); }
             // bools
