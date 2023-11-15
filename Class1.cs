@@ -126,7 +126,7 @@ namespace LethalCompanyTestMod
             Instance = this;
             mls = BepInEx.Logging.Logger.CreateLogSource("GameMaster");
             // Plugin startup logic
-            mls.LogInfo("Loaded GameMaster. Patching.");
+            mls.LogInfo($"Loaded {modGUID}. Patching.");
             harmony.PatchAll(typeof(TestMod));
             mls = Logger;
             enemyRaritys = new Dictionary<SpawnableEnemyWithRarity, int>();
