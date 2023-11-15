@@ -66,7 +66,7 @@ namespace LethalCompanyTestMod
 
         private static ConfigEntry<bool> HideCommandMessages;
         private static ConfigEntry<bool> HideEnemySpawnMessages;
-        private static ConfigEntry<bool> EnableInfiniteSprint;
+        internal static ConfigEntry<bool> EnableInfiniteSprint;
         private static ConfigEntry<bool> EnableInfiniteCredits;
         private static ConfigEntry<bool> EnableInfiniteDeadline;
         private static ConfigEntry<int> XPChange;
@@ -106,27 +106,27 @@ namespace LethalCompanyTestMod
         // plan for more in the future
         private static SpawnableEnemyWithRarity jesterRef;
 
-        private static GUILoader myGUI;
+        internal static GUILoader myGUI;
         private static bool noClipEnabled;
-        private static bool enableGod;
-        private static bool nightVision;
-        private static PlayerControllerB playerRef;
+        internal static bool enableGod;
+        internal static bool nightVision;
+        internal static PlayerControllerB playerRef;
         private static bool speedHack;
-        private static float nightVisionIntensity;
-        private static float nightVisionRange;
-        private static UnityEngine.Color nightVisionColor;
+        internal static float nightVisionIntensity;
+        internal static float nightVisionRange;
+        internal static UnityEngine.Color nightVisionColor;
 
         private static bool hasGUISynced = false;
-        private static bool isHost;
+        internal static bool isHost;
 
-        private static TestMod Instance;
+        internal static TestMod Instance;
 
         void Awake()
         {
             Instance = this;
             mls = BepInEx.Logging.Logger.CreateLogSource("GameMaster");
             // Plugin startup logic
-            mls.LogInfo("Loaded GameMaster. Patching.");
+            mls.LogInfo($"Loaded {modGUID}. Patching.");
             harmony.PatchAll(typeof(TestMod));
             mls = Logger;
             enemyRaritys = new Dictionary<SpawnableEnemyWithRarity, int>();
@@ -196,7 +196,7 @@ namespace LethalCompanyTestMod
             hasGUISynced = true;
         }
 
-        void UpdateCFGVarsFromGUI()
+        internal void UpdateCFGVarsFromGUI()
         {
             if(!hasGUISynced) { setGUIVars(); }
             // bools
@@ -389,62 +389,6 @@ namespace LethalCompanyTestMod
             playerRef.isSpeedCheating = speedHack;
             //cfgSpeedHack.Value = speedHack;
             //return speedHack;
-        }
-
-        [HarmonyPatch(typeof(PlayerControllerB), "Update")]
-        [HarmonyPrefix]
-        static void patchControllerUpdate()
-        {
-            myGUI.guiIsHost = isHost;
-            Instance.UpdateCFGVarsFromGUI();
-        }
-
-        [HarmonyPatch(typeof(PlayerControllerB), "Start")]
-        [HarmonyPrefix]
-        static void getNightVision(ref PlayerControllerB __instance)
-        {
-            playerRef = __instance;
-            nightVision = playerRef.nightVision.enabled;
-            // store nightvision values
-            nightVisionIntensity = playerRef.nightVision.intensity;
-            nightVisionColor = playerRef.nightVision.color;
-            nightVisionRange = playerRef.nightVision.range;
-
-            playerRef.nightVision.color = UnityEngine.Color.green;
-            playerRef.nightVision.intensity = 1000f;
-            playerRef.nightVision.range = 10000f;
-        }
-
-        [HarmonyPatch(typeof(PlayerControllerB), "SetNightVisionEnabled")]
-        [HarmonyPostfix]
-        static void updateNightVision()
-        {
-            //instead of enabling/disabling nightvision, set the variables
-
-            if (nightVision)
-            {
-                playerRef.nightVision.color = UnityEngine.Color.green;
-                playerRef.nightVision.intensity = 1000f;
-                playerRef.nightVision.range = 10000f;
-            }
-            else
-            {
-                playerRef.nightVision.color = nightVisionColor;
-                playerRef.nightVision.intensity = nightVisionIntensity;
-                playerRef.nightVision.range = nightVisionRange;
-            }
-
-            // should always be on
-            playerRef.nightVision.enabled = true;
-        }
-
-
-        [HarmonyPatch(typeof(PlayerControllerB), "AllowPlayerDeath")]
-        [HarmonyPrefix]
-        static bool OverrideDeath()
-        {
-            if (!isHost) { return true; }
-            return !enableGod;
         }
 
         [HarmonyPatch(typeof(Terminal), nameof(Terminal.RunTerminalEvents))]
@@ -1286,14 +1230,6 @@ namespace LethalCompanyTestMod
             if (EnableAIModifiers.Value && isHost) { ___noPlayersToChaseTimer = JesterResetTimer.Value; }
             
 
-        }
-
-        [HarmonyPatch(typeof(PlayerControllerB), "Update")]
-        [HarmonyPostfix]
-        static void InfiniteSprint(ref float ___sprintMeter)
-        {
-            
-            if (EnableInfiniteSprint.Value && isHost) { Mathf.Clamp(___sprintMeter += 0.02f, 0f, 1f); }
         }
 
         [HarmonyPatch(typeof(CrawlerAI), nameof(CrawlerAI.HitEnemy))]

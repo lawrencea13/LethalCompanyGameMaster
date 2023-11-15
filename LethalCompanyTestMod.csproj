@@ -79,6 +79,7 @@
   <ItemGroup>
     <Compile Include="Class1.cs" />
     <Compile Include="GUILoader.cs" />
+    <Compile Include="Patches\PlayerControllerBPatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
