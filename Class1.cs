@@ -391,62 +391,6 @@ namespace LethalCompanyTestMod
             //return speedHack;
         }
 
-        [HarmonyPatch(typeof(PlayerControllerB), "Update")]
-        [HarmonyPrefix]
-        static void patchControllerUpdate()
-        {
-            myGUI.guiIsHost = isHost;
-            Instance.UpdateCFGVarsFromGUI();
-        }
-
-        [HarmonyPatch(typeof(PlayerControllerB), "Start")]
-        [HarmonyPrefix]
-        static void getNightVision(ref PlayerControllerB __instance)
-        {
-            playerRef = __instance;
-            nightVision = playerRef.nightVision.enabled;
-            // store nightvision values
-            nightVisionIntensity = playerRef.nightVision.intensity;
-            nightVisionColor = playerRef.nightVision.color;
-            nightVisionRange = playerRef.nightVision.range;
-
-            playerRef.nightVision.color = UnityEngine.Color.green;
-            playerRef.nightVision.intensity = 1000f;
-            playerRef.nightVision.range = 10000f;
-        }
-
-        [HarmonyPatch(typeof(PlayerControllerB), "SetNightVisionEnabled")]
-        [HarmonyPostfix]
-        static void updateNightVision()
-        {
-            //instead of enabling/disabling nightvision, set the variables
-
-            if (nightVision)
-            {
-                playerRef.nightVision.color = UnityEngine.Color.green;
-                playerRef.nightVision.intensity = 1000f;
-                playerRef.nightVision.range = 10000f;
-            }
-            else
-            {
-                playerRef.nightVision.color = nightVisionColor;
-                playerRef.nightVision.intensity = nightVisionIntensity;
-                playerRef.nightVision.range = nightVisionRange;
-            }
-
-            // should always be on
-            playerRef.nightVision.enabled = true;
-        }
-
-
-        [HarmonyPatch(typeof(PlayerControllerB), "AllowPlayerDeath")]
-        [HarmonyPrefix]
-        static bool OverrideDeath()
-        {
-            if (!isHost) { return true; }
-            return !enableGod;
-        }
-
         [HarmonyPatch(typeof(Terminal), nameof(Terminal.RunTerminalEvents))]
         [HarmonyPostfix]
         static void NeverLoseCredits(ref int ___groupCredits)
@@ -1286,14 +1230,6 @@ namespace LethalCompanyTestMod
             if (EnableAIModifiers.Value && isHost) { ___noPlayersToChaseTimer = JesterResetTimer.Value; }
             
 
-        }
-
-        [HarmonyPatch(typeof(PlayerControllerB), "Update")]
-        [HarmonyPostfix]
-        static void InfiniteSprint(ref float ___sprintMeter)
-        {
-            
-            if (EnableInfiniteSprint.Value && isHost) { Mathf.Clamp(___sprintMeter += 0.02f, 0f, 1f); }
         }
 
         [HarmonyPatch(typeof(CrawlerAI), nameof(CrawlerAI.HitEnemy))]
