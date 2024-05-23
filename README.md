@@ -1,5 +1,14 @@
 # LethalCompanyGameMaster
-Essentially a gamemode for lethal company that allows the host to control how dangerous the game is by spawning enemies.
+<ins>a gamemode for Lethal Company that allows the host to control various aspects of the game such as..</ins>
+* Spawning enemies
+* Disabling natural spawning
+* Adjusting credit amount
+* Adjusting player speed
+* Adjusting player sprint/stamina amount
+* Adjusting credit deadline
+
+And more!
+
 
 *I know the code is disorganized and could be 10x better. Unfortunately, I won't be making it cleaner, the important parts are efficient.
 
@@ -19,36 +28,36 @@ Essentially a gamemode for lethal company that allows the host to control how da
 
 # How to use the spawn function
 1. Once in-game, open chat
-2. type in spawn then the name of the enemy you'd like, and optionally how many. E.g. spawn spring 5 or spawn spring
-3. Enemies will spawn randomly among the list of available spawn points, inside enemies spawn inside, and outside enemies spawn outside
+2. type in spawn then the name of the enemy you'd like, and optionally how many. E.g. "spawn spring 5 or spawn spring"
+3. Enemies will spawn randomly among the list of available spawn points, inside enemies (like bunker spider, flowerman..) spawn inside, and outside enemies(forest giant, baboon hawk..) spawn outside
 
 # You may not be fully aware of the names, so here's a list of the enemy names:
 *Note: You don't need to type the full name, for example, "spider" will work for the bunker spider.
 
 Inside:
-Girl
-Lasso
-Bunker Spider
-Centipede
-Blob
-Flowerman
-Spring
-Crawler
-Hoarding bug
-Jester
-Puffer
+Girl,
+Lasso,
+Bunker Spider,
+Centipede,
+Blob,
+Flowerman,
+Spring,
+Crawler,
+Hoarding bug,
+Jester,
+Puffer,
 
 Outside:
-ForestGiant
-MouthDog
-Earth Leviathan
-Baboon Bird
+ForestGiant,
+MouthDog,
+Earth Leviathan,
+Baboon Bird,
 
 # How to use the buy function
 1. Once in-game, open chat
-2. type in buy then the name of the item you'd like to buy, and optionally how many. e.g. /buy flash 4 will buy 4 pro flashlights
+2. type in buy then the name of the item you'd like to buy, and optionally how many. e.g. "/buy flash 4" will buy 4 pro flashlights
 3. These items will be assigned to their own drop pod, not added to the next one coming in.
-4. You can also use the item id in place of the name for single purchases. e.g. /buy 4 will buy 1 pro flashlight
+4. You can also use the item id in place of the name for single purchases. e.g. "/buy 4" will buy 1 pro flashlight
 
 Here is the item list alongside their IDs:
   { "Walkie-Talkie", 0 },
